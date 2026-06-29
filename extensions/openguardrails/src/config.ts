@@ -27,6 +27,21 @@ export interface JudgeConfig {
   headers?: Record<string, string>
 }
 
+/**
+ * Channel-inbound tainting: once a session ingests untrusted content (an inbound
+ * channel message, or a tool result from a web/fetch/search/browser/MCP tool),
+ * subsequent tool calls in that session carry `untrusted` provenance so the OGR
+ * judge can treat a privileged action as possible indirect prompt injection.
+ */
+export interface TaintConfig {
+  /** Mark a session tainted when it receives an inbound channel message (default true). */
+  inboundMessages?: boolean
+  /** Mark a session tainted after an external-content tool result (default true). */
+  toolResults?: boolean
+  /** Regex (matched case-insensitively against the tool name) for external-content tools. */
+  toolResultPattern?: string
+}
+
 /** Plugin config, delivered through OpenClaw `plugins.entries.openguardrails.config`. */
 export interface GuardrailsOptions {
   /** Inline OGR policy (overrides the file + default). */
@@ -37,7 +52,16 @@ export interface GuardrailsOptions {
   judge?: JudgeConfig
   /** Also evaluate inbound/outbound channel messages (default true). */
   guardMessages?: boolean
+  /** Channel-inbound tainting controls (default: both on). */
+  taint?: TaintConfig
 }
+
+/**
+ * Default external-content tool matcher — tools whose results commonly carry
+ * untrusted, possibly-injected content (web pages, search hits, MCP, email).
+ */
+export const DEFAULT_TAINT_TOOL_PATTERN =
+  "(web|fetch|search|browse|browser|http|url|crawl|scrape|mcp|email|mail|gmail|document|extract|rss|feed)"
 
 /** Default text/regex guardrails — deterministic, no model required. */
 export const DEFAULT_POLICY: Policy = {
@@ -88,6 +112,7 @@ export interface ResolvedConfig {
   policy: Policy
   judge?: JudgeConfig
   guardMessages: boolean
+  taint: Required<TaintConfig>
 }
 
 /**
@@ -113,5 +138,11 @@ export function loadGuardrailsConfig(workspaceDir: string | undefined, options?:
   if (options?.policy) policy = options.policy
 
   const judge = options?.judge ?? (policy["judge"] as JudgeConfig | undefined)
-  return { policy, judge, guardMessages: options?.guardMessages ?? true }
+  const taintOpts = options?.taint ?? (policy["taint"] as TaintConfig | undefined) ?? {}
+  const taint: Required<TaintConfig> = {
+    inboundMessages: taintOpts.inboundMessages ?? true,
+    toolResults: taintOpts.toolResults ?? true,
+    toolResultPattern: taintOpts.toolResultPattern ?? DEFAULT_TAINT_TOOL_PATTERN,
+  }
+  return { policy, judge, guardMessages: options?.guardMessages ?? true, taint }
 }
