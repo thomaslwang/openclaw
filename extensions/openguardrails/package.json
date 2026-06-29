@@ -1,0 +1,31 @@
+{
+  "name": "openguardrails-instrumentation-openclaw",
+  "version": "0.1.1",
+  "private": true,
+  "description": "Guard an OpenClaw assistant's tool calls and channel traffic through the OpenGuardrails (OGR) protocol. Bundled extension; OGR core vendored from @openguardrails/core.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thomaslwang/openclaw"
+  },
+  "type": "module",
+  "devDependencies": {
+    "@openclaw/plugin-sdk": "workspace:*"
+  },
+  "openclaw": {
+    "extensions": [
+      "./index.ts"
+    ],
+    "install": {
+      "clawhubSpec": "clawhub:openguardrails-instrumentation-openclaw",
+      "npmSpec": "openguardrails-instrumentation-openclaw",
+      "defaultChoice": "clawhub",
+      "minHostVersion": ">=2026.6.10"
+    },
+    "compat": {
+      "pluginApi": ">=2026.6.10"
+    },
+    "build": {
+      "openclawVersion": "2026.6.10"
+    }
+  }
+}
